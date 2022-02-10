@@ -17,13 +17,17 @@ type ExportFactory func() Interface
 
 var formats = map[string]ExportFactory{}
 
-// Verified ASA that export well to tax tracker websites.
-var verifiedASA = map[uint64]struct{}{
-	163650: struct{}{},     // ARCC
-	226701642: struct{}{},  // YLDY
-	27165954: struct{}{},   // PLANETS
-	283820866: struct{}{},  // XET
-	287867876: struct{}{},  // OPUL
+// Verified ASA that export well to tax tracker websites (i.e. cointracking.info).
+// The string value allows for token disambiguation to the tax software.
+// Token disambiguation is needed when there are multiple coins with the same name.
+// https://cointracking.info/coin_charts.php
+var verifiedASA = map[uint64]string{
+	163650: "",         // ARCC
+	226701642: "",      // YLDY
+	230946361: "GEMS3", // Algogems
+	27165954: "",       // PLANETS
+	283820866: "",      // XET
+	287867876: "",      // OPUL
 }
 
 func registerFormat(format string, factory ExportFactory) {
@@ -52,14 +56,22 @@ type ExportRecord struct {
 	topTxID   string
 	txid      string
 	recvQty   uint64
+	recvASA   uint64
 	receiver  string
 	sentQty   uint64
+	sentASA   uint64
 	sender    string
 	fee       uint64
-	assetID   uint64
 	label     string
-	reward    bool // Is this a reward transaction - treat as income.
-	feeTx     bool // Is this a fee transaction.
+	comment   string
+
+	airdrop   bool  // Is this an airdrop - treat as income.
+	appl      bool  // Is this an application.
+	mining    bool  // Is this a mining.
+	reward    bool  // Is this a reward transaction - treat as income.
+	spend     bool  // Is this a spend transaction.
+	trade     bool  // Is this a trade transaction.
+	feeTx     bool  // Is this a fee transaction.
 	txRaw     models.Transaction
 	account   string
 }
@@ -84,7 +96,7 @@ func appendPostFilter(records []ExportRecord, record ExportRecord) []ExportRecor
 type Interface interface {
 	Name() string
 	WriteHeader(writer io.Writer)
-	WriteRecord(writer io.Writer, record ExportRecord, assetMap map[uint64]models.Asset)
+	WriteRecord(writer io.Writer, assetMap map[uint64]models.Asset, record ExportRecord)
 }
 
 func algoFmt(algos uint64) string {
@@ -116,7 +128,10 @@ func asaFmt(assetID uint64, assetMap map[uint64]models.Asset) string {
 		log.Fatalln("unknown unit name for AssetID:", assetID)
 		return ""
 	}
-	if _, ok := verifiedASA[assetID]; ok {
+	if asaName, ok := verifiedASA[assetID]; ok {
+		if asaName != "" {
+			return asaName
+		}
 		return val.Params.UnitName
 	}
 	return fmt.Sprintf("%x", assetID % 4294967295)  // Limit to 8 characters.
@@ -126,7 +141,7 @@ func asaComment(assetID uint64, assetMap map[uint64]models.Asset) string {
 	if assetID == 0 {
 		return ""
 	}
-  if _, ok := verifiedASA[assetID]; ok {
+	if _, ok := verifiedASA[assetID]; ok {
 		return ""
 	}
 	val, ok := assetMap[assetID]
@@ -134,7 +149,32 @@ func asaComment(assetID uint64, assetMap map[uint64]models.Asset) string {
 		log.Fatalln("unknown unit name for AssetID:", assetID)
 		return ""
 	}
-  return fmt.Sprintf("%s-%d | %s", val.Params.UnitName, assetID, val.Params.Name)
+	return fmt.Sprintf("%s-%d | %s", val.Params.UnitName, assetID, val.Params.Name)
+}
+
+func (r ExportRecord) IsASADeposit() bool {
+	return r.recvASA != 0 && r.IsDeposit()
+}
+
+func (r ExportRecord) IsASAMining(assetID uint64) bool {
+	return r.recvASA == assetID && r.IsASADeposit()
+}
+
+func (r ExportRecord) IsDeposit() bool {
+	return r.recvQty != 0 && r.sentQty == 0
+}
+
+func (r ExportRecord) IsTrade() bool {
+	return r.recvQty != 0 && r.sentQty != 0
+}
+
+func ExtractApplication(txns []models.Transaction) (models.TransactionApplication, error) {
+	for _, tx := range txns {
+		if tx.Type == "appl" {
+			return tx.ApplicationTransaction, nil
+		}
+	}
+	return models.TransactionApplication{}, fmt.Errorf("transaction application not found")
 }
 
 // Parse a transaction block, converting into simple send / receive equivalents.
@@ -258,15 +298,17 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 				sendAmount = tx.AssetTransferTransaction.Amount
 				rewards += tx.SenderRewards
 			}
+
 			records = appendPostFilter(records, ExportRecord{
 				blockTime: blockTime,
 				topTxID:   topTxID,
 				txid:      tx.Id,
 				recvQty:   recvAmount,
+			  recvASA:   tx.AssetTransferTransaction.AssetId,
 				receiver:  account,
 				sentQty:   sendAmount,
+			  sentASA:   tx.AssetTransferTransaction.AssetId,
 				sender:    tx.Sender,
-				assetID:   tx.AssetTransferTransaction.AssetId,
 				txRaw:     tx,
 				account:   account,
 			})
@@ -284,8 +326,8 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 					txid:      tx.Id,
 					receiver:  tx.AssetTransferTransaction.CloseTo,
 					sentQty:   tx.AssetTransferTransaction.CloseAmount + tx.AssetTransferTransaction.CloseAmount,
+			    sentASA:   tx.AssetTransferTransaction.AssetId,
 					sender:    account,
-					assetID:   tx.AssetTransferTransaction.AssetId,
 					txRaw:     tx,
 					account:   account,
 				})
@@ -296,8 +338,8 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 					txid:      tx.Id,
 					receiver:  tx.AssetTransferTransaction.Receiver,
 					sentQty:   tx.AssetTransferTransaction.Amount,
+			    sentASA:   tx.AssetTransferTransaction.AssetId,
 					sender:    account,
-					assetID:   tx.AssetTransferTransaction.AssetId,
 					txRaw:     tx,
 					account:   account,
 				})
@@ -309,8 +351,8 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 					txid:      tx.Id,
 					receiver:  tx.AssetTransferTransaction.Receiver,
 					sentQty:   tx.AssetTransferTransaction.Amount + tx.AssetTransferTransaction.CloseAmount,
+			    sentASA:   tx.AssetTransferTransaction.AssetId,
 					sender:    account,
-					assetID:   tx.AssetTransferTransaction.AssetId,
 					txRaw:     tx,
 					account:   account,
 				})
@@ -349,6 +391,8 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 				account:   account,
 			})
 			rewards = tx.SenderRewards
+		} else {
+			fmt.Printf("    Tx Type: %s | TxID: %s | Sender: %s\n", tx.Type, tx.Id, tx.Sender)
 		}
 	default:
 		log.Fatalln("unknown transaction type:", tx.Type)
