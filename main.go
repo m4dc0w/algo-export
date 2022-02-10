@@ -18,7 +18,7 @@ import (
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 	"github.com/algorand/go-algorand-sdk/client/v2/indexer"
 	"github.com/algorand/go-algorand-sdk/types"
-	"github.com/pbennett/algo-export/exporter"
+	"github.com/m4dc0w/algo-export/exporter"
 )
 
 type accountList []types.Address
