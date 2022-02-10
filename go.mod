@@ -1,4 +1,4 @@
-module github.com/pbennett/algo-export
+module github.com/m4dc0w/algo-export
 
 go 1.16
 
