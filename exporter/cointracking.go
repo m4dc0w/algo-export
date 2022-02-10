@@ -3,6 +3,7 @@ package exporter
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
@@ -31,40 +32,43 @@ func (k *cointrackingExporter) WriteHeader(writer io.Writer) {
 	fmt.Fprintln(writer, "Type,Buy Amount,Buy Currency,Sell Amount,Sell Currency,Fee,Fee Currency,Exchange,Trade-Group,Comment,Date,Tx-ID")
 }
 
-func (k *cointrackingExporter) WriteRecord(writer io.Writer, record ExportRecord, assetMap map[uint64]models.Asset) {
+func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64]models.Asset, record ExportRecord) {
 	// Type,Buy Amount,Buy Currency,Sell Amount,Sell Currency,Fee,Fee Currency,Exchange,Trade-Group,Comment,Date,Tx-ID
 
 	// Type,
 	// https://cointracking.freshdesk.com/en/support/solutions/articles/29000034379-expanded-transaction-types-may-2020-
 	switch {
-	case record.reward:
-		fmt.Fprintf(writer, "Reward / Bonus,")
+	case record.airdrop:
+		fmt.Fprintf(writer, "Airdrop,")
 	case record.feeTx:
 		fmt.Fprintf(writer, "Withdrawal,")
-	case record.recvQty != 0 && record.sentQty != 0:
+	case record.mining:
+		fmt.Fprintf(writer, "Mining,")
+	case record.reward:
+		fmt.Fprintf(writer, "Reward / Bonus,")
+	case record.spend:
+		fmt.Fprintf(writer, "Spend,")
+	case record.IsTrade():
 		fmt.Fprintf(writer, "Trade,")
-	case record.recvQty != 0:
+	case record.IsDeposit():
 		fmt.Fprintf(writer, "Deposit,")
 	default:
 		fmt.Fprintf(writer, "Withdrawal,")
 	}
-	
 	// Buy Amount,Buy Currency,
 	switch {
 	case record.recvQty != 0:
-		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.recvQty, record.assetID, assetMap), asaFmt(record.assetID, assetMap))
+		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.recvQty, record.recvASA, assetMap), asaFmt(record.recvASA, assetMap))
 	default:
 		fmt.Fprintf(writer, ",,")
 	}
-	
 	// Sell Amount,Sell Currency,
 	switch {
 	case record.sentQty != 0:
-		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.sentQty, record.assetID, assetMap), asaFmt(record.assetID, assetMap))
+		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.sentQty, record.sentASA, assetMap), asaFmt(record.sentASA, assetMap))
 	default:
 		fmt.Fprintf(writer, ",,")
 	}
-	
 	// Fee,Fee Currency,
 	switch {
 	case record.fee != 0:
@@ -80,7 +84,17 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, record ExportRecord
 	fmt.Fprintf(writer, "%s,", record.account)
 
 	// Comment,
-	fmt.Fprintf(writer, "%q,", asaComment(record.assetID, assetMap))
+	var comments []string
+	if record.recvASA != 0 {
+		comments = append(comments, asaComment(record.recvASA, assetMap))
+	}
+	if record.sentASA != 0 && record.recvASA != record.sentASA {
+		comments = append(comments, asaComment(record.sentASA, assetMap))
+	}
+	if record.comment != "" {
+		comments = append(comments, record.comment)
+	}
+	fmt.Fprintf(writer, "%q,", strings.Join(comments, " | "))
 
 	// Date,
 	fmt.Fprint(writer, record.blockTime.UTC().Format("2006-01-02T15:04:05Z,"))
@@ -93,11 +107,14 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, record ExportRecord
 		fmt.Fprintf(writer, "%s_%s", record.txid, record.account[:10])
 	}
 	switch {
+	case record.airdrop:
+		fmt.Fprintf(writer, "_airdrop")
+	case record.appl:
+		fmt.Fprintf(writer, "_appl")
 	case record.reward:
 		fmt.Fprintf(writer, "_reward")
 	case record.feeTx:
 		fmt.Fprintf(writer, "_fee")
 	}
-	
 	fmt.Fprint(writer, "\n")
 }
