@@ -8,12 +8,11 @@ Unfortunately, it can be difficult to track your crypto transactions. At least i
 This is why there are so many sites which will track your crypto activity for you and provide tax reports, tracking the proper cost-basis across potentially hundreds or thousands of transactions. They can automatically sync with exchanges as well as on-chain activity from wallet addresses you provide. Most of these sites support wallet scanning directly, but Algorand is still young, so direct on-chain scanning isn't available yet.
 
 
-This solution provides a simple starting point for a tool to export on-chain Algorand transactions to CSV files compatible with two of these crypto tax sites:
+This solution provides a simple starting point for a tool to export on-chain Algorand transactions to CSV files compatible with these crypto tax sites:
 
-* [CoinTracker](https://www.cointracker.io/)
-* [Koinly](https://koinly.io/)
+* [CoinTracking](https://www.cointracking.info/)
 
-CoinTracker has an excellent tax guide if you'd lke more details on the subject: https://www.cointracker.io/blog/crypto-tax-guide
+CoinTracker has an excellent tax guide if you'd like more details on the subject: https://www.cointracker.io/blog/crypto-tax-guide
 
 Koinly is an excellent choice as well. There are pros/cons to all of these sites and with varying fees & features. They're worth a look.
 
@@ -45,7 +44,7 @@ Before walking through the code, a quick example of the program's use is in orde
 I picked a random account on MainNet as well as one of the accounts it sent to, and exported both using the following command:
 
 ```
-algo-export -o test -f koinly -a HFTA36U4OCTSMXRUH4ZX3OACJBTJCR56AIH3G345TRPUQJHJBEXKLMMO4E,AV5EPTMH2RZJ2V72PR2WC63EMAMQOPKI2EDN4TU2XFA2WTAJN4VKKLODVI
+algo-export -o test -f cointracking -a HFTA36U4OCTSMXRUH4ZX3OACJBTJCR56AIH3G345TRPUQJHJBEXKLMMO4E,AV5EPTMH2RZJ2V72PR2WC63EMAMQOPKI2EDN4TU2XFA2WTAJN4VKKLODVI
 Exporting accounts:
 HFTA36U4OCTSMXRUH4ZX3OACJBTJCR56AIH3G345TRPUQJHJBEXKLMMO4E starting at: 1
 62 transactions
@@ -497,7 +496,7 @@ First, download the go compiler from https://golang.org/
 
 Run the following commands:
 
-1. `git clone https://github.com/pbennett/algo-export.git`
+1. `git clone https://github.com/m4dc0w/algo-export.git`
 2. `cd algo-export`
 3. `go build`
 
@@ -505,7 +504,7 @@ You will be left with a binary called `algo-export` in the current directory.
 
 To build the program, simply clone the code into a new directory: 
 
-`git clone https://github.com/pbennett/algo-export.git` 
+`git clone https://github.com/m4dc0w/algo-export.git` 
 
 and from that new directory, either: 
 
@@ -522,7 +521,7 @@ Account or list of comma delimited accounts to export
 -api string
 Optional API Key for local indexer, or for PureStake
 -f string
-Format to export: [cointracker, koinly] (default "cointracker")
+Format to export: [cointracking] (default "cointracking")
 -o string
 output directory path for exported files
 -p	Use PureStake API - ignoring -s argument
