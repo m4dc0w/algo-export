@@ -111,10 +111,12 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 		fmt.Fprintf(writer, "_airdrop")
 	case record.appl:
 		fmt.Fprintf(writer, "_appl")
-	case record.reward:
-		fmt.Fprintf(writer, "_reward")
 	case record.feeTx:
 		fmt.Fprintf(writer, "_fee")
+	case record.mining:
+		fmt.Fprintf(writer, "_mining")
+	case record.reward:
+		fmt.Fprintf(writer, "_reward")
 	}
 	fmt.Fprint(writer, "\n")
 }
