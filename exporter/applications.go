@@ -18,7 +18,7 @@ import (
 func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
 	var processed []ExportRecord
 	// Redeem Excess Amounts.
-	if (len(records) == 2 || (len(records) == 3 && records[2].reward)) && records[0].receiver == records[0].account {
+	if IsLengthExcludeReward(records, 2) && records[0].receiver == records[0].account {
 		processed = records
 		processed[0].reward = true
 		processed[0].comment = "Tinyman Redeem Excess Amounts"
@@ -27,7 +27,7 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 	}
 
 	// Swap ALGO -> ASA
-	if (len(records) == 3 || (len(records) == 4 && records[3].reward)) && records[0].receiver == records[0].account {
+	if IsLengthExcludeReward(records, 3) && records[0].receiver == records[0].account {
 		r := records[0]
 		r.appl = true
 		r.trade = true
@@ -44,7 +44,7 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 	}
 
 	// Swap ASA -> ASA or ASA -> ALGO
-	if (len(records) == 4 || (len(records) == 5 && records[4].reward)) && records[0].receiver == records[0].account {
+	if IsLengthExcludeReward(records, 4) && records[0].receiver == records[0].account {
 		r := records[0]
 		r.appl = true
 		r.trade = true
@@ -59,7 +59,7 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 	}
 
 	// Deposit ASA-ALGO Liquidity Pool.
-	if (len(records) == 5 || (len(records) == 6 && records[5].reward)) && records[0].receiver == records[0].account {
+	if IsLengthExcludeReward(records, 5) && records[0].receiver == records[0].account {
 		r1 := records[0]
 		r1.txid = records[1].txid
 		r1.appl = true
@@ -86,7 +86,7 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 		return processed, nil
 	}
 	// Deposit ASA-ASA Liquidity Pool.
-	if (len(records) == 6 || (len(records) == 7 && records[6].reward)) && records[0].receiver == records[0].account {
+	if IsLengthExcludeReward(records, 6) && records[0].receiver == records[0].account {
 		r1 := records[0]
 		r1.txid = records[1].txid
 		r1.appl = true
@@ -96,7 +96,6 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 		r1.sentASA = records[1].sentASA
 		r1.comment = "Tinyman Liquidity Pool Deposit"
 		processed = append(processed, r1)
-
 		processed = append(processed, records[2])
 
 		r2 := records[0]
@@ -113,7 +112,7 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 		return processed, nil
 	}
 	// Withdrawal ASA-ASA or ASA-ALGO Liquidity Pool.
-	if (len(records) == 5 || (len(records) == 6 && records[5].reward)) && records[0].sender == records[0].account {
+	if IsLengthExcludeReward(records, 5) && records[0].sender == records[0].account {
 		r1 := records[0]
 		r1.txid = records[2].txid
 		r1.appl = true
@@ -138,4 +137,74 @@ func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord) ([]Ex
 		return processed, nil
 	}
 	return processed, fmt.Errorf("error exporting Tinyman application")
+}
+
+// ApplAkitaTokenSwap exports Akita Token Swap.
+// AKITA -> AKTA swap
+// https://swap.akita.community/
+// https://algoexplorer.io/application/537279393
+func ApplAkitaTokenSwap(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	var processed []ExportRecord
+	if !IsLengthExcludeReward(records, 5) {
+		return records, fmt.Errorf("invalid ApplAkitaTokenSwap() record")
+	}
+
+	r := records[0]
+	r.appl = true
+	r.trade = true
+	r.sentQty = records[2].sentQty
+	r.sentASA = records[2].sentASA
+	r.comment = "Akita Token Swap"
+	processed = append(processed, r)
+	processed = append(processed, records[1])
+	processed = append(processed, records[3:]...)
+	return processed, nil
+}
+
+// https://app.yieldly.finance/algo-prize-game
+func ApplYieldlyAlgoPrizeGame(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	return records, nil
+}
+
+// https://app.yieldly.finance/distribution
+func ApplYieldlyDistributionPools(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	return records, nil
+}
+
+// https://app.yieldly.finance/liquidity-pools
+func ApplYieldlyLiquidityPools(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	// Claim.
+	if IsLengthExcludeReward(records, 3) && records[1].IsDeposit() &&
+	  asaUnitName(records[1].recvASA, assetMap) != "TMPOOL11" &&
+		asaUnitName(records[1].recvASA, assetMap) != "TM1POOL" {
+		records[1].reward = true
+		records[1].comment = "Claim - Yieldly Liquidity Staking Pool"
+		return records, nil
+	}
+
+	// Stake.
+	if IsLengthExcludeReward(records, 4) && records[1].IsWithdrawal() {
+		records[1].comment = "Stake - Yieldly Liquidity Staking Pool"
+		return records, nil
+	}
+
+	// Withdrawal.
+	if IsLengthExcludeReward(records, 3) && records[1].IsDeposit() {
+		records[1].comment = "Withdraw - Yieldly Liquidity Staking Pool"
+		return records, nil
+	}
+
+	// Opt-In
+	// Opt-Out
+	return records, nil
+}
+
+// https://app.yieldly.finance/nft
+func ApplYieldlyNFTPrizeGames(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	return records, nil
+}
+
+// https://app.yieldly.finance/pools
+func ApplYieldlyStakingPools(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+	return records, nil
 }
