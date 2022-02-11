@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -137,6 +138,18 @@ func asaFmt(assetID uint64, assetMap map[uint64]models.Asset) string {
 	return fmt.Sprintf("%x", assetID % 4294967295)  // Limit to 8 characters.
 }
 
+func asaUnitName(assetID uint64, assetMap map[uint64]models.Asset) string {
+	if assetID == 0 {
+		return "ALGO"
+	}
+	val, ok := assetMap[assetID]
+	if !ok {
+		log.Fatalln("unknown unit name for AssetID:", assetID)
+		return ""
+	}
+	return val.Params.UnitName
+}
+
 func asaComment(assetID uint64, assetMap map[uint64]models.Asset) string {
 	if assetID == 0 {
 		return ""
@@ -164,8 +177,27 @@ func (r ExportRecord) IsDeposit() bool {
 	return r.recvQty != 0 && r.sentQty == 0
 }
 
+func (r ExportRecord) IsReward() bool {
+	return r.reward
+}
+
 func (r ExportRecord) IsTrade() bool {
 	return r.recvQty != 0 && r.sentQty != 0
+}
+
+func (r ExportRecord) IsWithdrawal() bool {
+	return r.recvQty == 0 && r.sentQty != 0
+}
+
+func (r ExportRecord) String() string {
+	return fmt.Sprintf("| TopTxID: %s | txID: %s | Group: %s | recv: %d %d | sent: %d %d | sender: %s | receiver: %s | comment: %s", r.topTxID, r.txid, base64.StdEncoding.EncodeToString(r.txRaw.Group), r.recvQty, r.recvASA, r.sentQty, r.sentASA, r.sender, r.receiver, r.comment)
+}
+
+func IsLengthExcludeReward(records []ExportRecord, length int) bool {
+	if length < 0 {
+		return false
+	}
+	return length == 0 && len(records) == length || (len(records) == length && !records[length-1].IsReward()) || (len(records) == (length+1) && records[length].IsReward())
 }
 
 func ExtractApplication(txns []models.Transaction) (models.TransactionApplication, error) {
@@ -391,8 +423,6 @@ func FilterTransaction(tx models.Transaction, topTxID, account string, assetMap 
 				account:   account,
 			})
 			rewards = tx.SenderRewards
-		} else {
-			fmt.Printf("    Tx Type: %s | TxID: %s | Sender: %s\n", tx.Type, tx.Id, tx.Sender)
 		}
 	default:
 		log.Fatalln("unknown transaction type:", tx.Type)
