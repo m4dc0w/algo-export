@@ -194,6 +194,7 @@ func applYieldyStakingPoolArg(txns []models.Transaction) (string, string) {
 	}
 	return "", ""
 }
+
 // https://app.yieldly.finance/liquidity-pools
 func ApplYieldlyLiquidityPools(records []ExportRecord, txns []models.Transaction) ([]ExportRecord, error) {
 	onCompletion, action := applYieldyStakingPoolArg(txns)
