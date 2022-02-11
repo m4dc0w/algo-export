@@ -106,13 +106,14 @@ func getClient(serverFlag string, apiKey string, usePureStake bool) (*indexer.Cl
 	return client, err
 }
 
-func exportTransactions(client *indexer.Client, export exporter.Interface, account string, outCsv io.Writer, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) error {
+func toExportRecords(client *indexer.Client, export exporter.Interface, account string, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) ([]exporter.ExportRecord, error) {
 	var records []exporter.ExportRecord
-
 	for index, tx := range txns {
+		fmt.Printf("  Converting Tx Type: %s | TxID: %s | Sender: %s\n", tx.Type, tx.Id, tx.Sender)
 		if topTxID != "" {
 			topTxID = fmt.Sprintf("%d-%s", index, topTxID)  // Keep an unique id each inner transaction.
 		}
+
 		// Recursive export of inner transactions.
 		if len(tx.InnerTxns) > 0 {
 			var uniqueTxID string
@@ -120,9 +121,11 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				uniqueTxID = "inner-" + tx.Id  // Initialize to top level transaction id.
 			}
 			fmt.Printf("    processing %d inner transaction(s) for transaction id: %s\n", len(tx.InnerTxns), tx.Id)
-			if err := exportTransactions(client, export, account, outCsv, assetMap, uniqueTxID, tx.InnerTxns); err != nil {
-				return err
+			innerRecords, err := toExportRecords(client, export, account, assetMap, uniqueTxID, tx.InnerTxns)
+			if err != nil {
+				return records, err
 			}
+			records = append(records, innerRecords...)
 		}
 
 		// Populate assetMap if entry does not exist.
@@ -134,13 +137,24 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				lookupASA := client.LookupAssetByID(tx.AssetTransferTransaction.AssetId)
 				_, asset, err := lookupASA.Do(context.TODO())
 				if err != nil {
-					return fmt.Errorf("error looking up asset id: %w", err)
+					return records, fmt.Errorf("error looking up asset id: %w", err)
 				}
 				fmt.Printf("    looked up | Asset ID: %d | UnitName: %s | Name: %s | Decimals: %d |\n", asset.Index, asset.Params.UnitName, asset.Params.Name, asset.Params.Decimals)
 				assetMap[tx.AssetTransferTransaction.AssetId] = asset
 			}
 		}
+
 		records = append(records, exporter.FilterTransaction(tx, topTxID, account, assetMap)...)
+	}
+	return records, nil
+}
+
+func exportTransactions(client *indexer.Client, export exporter.Interface, account string, outCsv io.Writer, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) error {
+	fmt.Printf("\nExport %d Transactions\n", len(txns))
+
+	records, err := toExportRecords(client, export, account, assetMap, topTxID, txns)
+	if err != nil {
+		return err
 	}
 
 	// Applications (e.g. DeFi, Liquidity Pool) are usually part of a Group transaction.
@@ -153,15 +167,40 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 		}
 		err = nil
 
-		switch {
+		fmt.Printf("  Processing Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
+
+		switch appl.ApplicationId {
 			// https://docs.tinyman.org/contracts
 			// Version 1.1 - Mainnet Validator App ID: 552635992
 			// Version 1.0 - Mainnet Validator App ID: 350338509
-			case appl.ApplicationId == 552635992 || appl.ApplicationId == 350338509:
-				fmt.Printf("Processing tinyman transaction %d for group id: %s\n", appl.ApplicationId, groupID)
+			case 552635992, 350338509:
 				records, err = exporter.ApplTinyman(assetMap, records)
+
+			// Yieldly Staking Pools.
+			// https://app.yieldly.finance/pools
+			case 498747685:	// ARCC -> ARCC
+			
+			// Yieldly Liquidity Pools.
+			// https://app.yieldly.finance/liquidity-pools
+			case 511593477, // AKITA/ALGO LP -> YLDY
+				556355279,		// AKTA/ALGO LP -> YLDY
+				568949192,		// XET/YLDY LP -> YLDY
+				583355704,		// ARCC/YLDY LP -> YLDY
+				591416743,		// DEFLY/YLDY LP -> YLDY
+				593133882,		// KTNC/YLDY LP -> YLDY
+				593278929,		// TINY/YLDY LP -> YLDY
+				593294372,		// TREES/YLDY LP -> YLDY
+				593337625,		// BLOCK/YLDY LP -> YLDY
+				596954871:		// HDL/YLDY LP -> YLDY
+				records, err = exporter.ApplYieldlyLiquidityPools(assetMap, records)
+
+			// AKITA -> AKTA swap
+			// https://swap.akita.community/
+			// https://algoexplorer.io/application/537279393
+			case 537279393:
+				records, err = exporter.ApplAkitaTokenSwap(assetMap, records)
 			default:
-				fmt.Printf("Skipping application ID %d for group id: %s\n", appl.ApplicationId, groupID)
+				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
 
 		if err != nil {
@@ -169,16 +208,18 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			return err
 		}
 	}
+
 	// ASA Airdrops are usually done in 1 ASA deposit transaction.
-	if len(records) == 1 && records[0].IsASADeposit() {
+	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit() {
 		var err error
 		records, err = exporter.AirdropASA(records)
 		if err != nil {
 			return err
 		}
 	}
+
 	// Assume Mining transactions are usually done in 1 ASA deposit transaction.
-	if len(records) == 1 && records[0].IsASADeposit() {
+	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit() {
 		var err error
 		r := records[0]
 		switch {
@@ -190,7 +231,21 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 		}
 	}
 
+	// Other Rewards.
+	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsDeposit() {
+		var err error
+		r := records[0]
+		switch {
+		case r.IsAlgorandGovernance():
+			records, err = exporter.RewardsAlgorandGovernance(records)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, record := range records {
+		fmt.Printf("Writing %s\n", record.String())
 		export.WriteRecord(outCsv, assetMap, record)
 	}
 	return nil
@@ -239,21 +294,8 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 			}
 
 			for _, tx := range transactions.Transactions {
-				if len(tx.Group) == 0 {
-					// Export previous group transactions.
-					if err := exportTransactions(client, export, account, outCsv, assetMap, "", txnsGroup); err != nil {
-						return err
-					}
-					txnsGroup = nil // Reset group.
-					// Export current single transaction.
-					if err := exportTransactions(client, export, account, outCsv, assetMap, "", []models.Transaction{tx}); err != nil {
-						return err
-					}
-					continue
-				}
-
 				// Transaction is in same group.
-				if len(txnsGroup) > 0 && bytes.Equal(tx.Group, txnsGroup[0].Group) {
+				if len(txnsGroup) > 0 && len(tx.Group) > 0 && bytes.Equal(tx.Group, txnsGroup[0].Group) {
 					txnsGroup = append(txnsGroup, tx)
 					continue
 				}
