@@ -186,7 +186,7 @@ func (r ExportRecord) IsTrade() bool {
 }
 
 func (r ExportRecord) IsWithdrawal() bool {
-	return r.recvQty == 0 && r.sentQty != 0
+	return r.recvQty == 0 && r.sentQty != 0 && !r.feeTx
 }
 
 func (r ExportRecord) String() string {
