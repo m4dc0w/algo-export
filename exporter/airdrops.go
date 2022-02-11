@@ -25,6 +25,15 @@ func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 		return records, nil
 	}
 
+	// General Flamingo coin airdrop address.
+	// https://www.reddit.com/r/FlamingoCoin
+	// https://flamingocoin.org/
+	if r.sender =="6NHQRVFZIBAII4PV2CN7XTYPP5DWQC6YKA37MA2OI2DRIEMTSVNF2TVYAY" && r.recvASA == 406383570 && r.sender != r.account {
+		records[0].airdrop = true
+		records[0].comment = "Flamingo Coin Team Airdrop"
+		return records, nil
+	}
+
 	if len(r.txRaw.Note) == 0 {
 		return records, nil
 	}
