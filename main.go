@@ -176,9 +176,31 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			case 552635992, 350338509:
 				records, err = exporter.ApplTinyman(assetMap, records)
 
-			// Yieldly Staking Pools.
-			// https://app.yieldly.finance/pools
-			case 498747685:	// ARCC -> ARCC
+			// Yieldly Staking Pool one to two.
+			case 233725850:	// YLDY -> YLDY/ALGO
+
+			// Yieldly Staking Pools one to one.
+			// https://app.yieldly.finance/pools			
+			case 348079765, // YLDY -> OPUL
+				352116819,		// YLDY -> SMILE
+				367431051,		// OPUL -> OPUL
+				373819681,		// SMILE -> SMILE
+				385089192,		// YLDY -> ARCC
+				393388133,		// YLDY -> GEMS
+				419301793,		// GEMS -> GEMS
+				424101057,		// YLDY -> XET
+				447336112,		// YLDY -> CHOICE
+				464365150,		// CHOICE -> CHOICE
+				498747685,		// ARCC -> ARCC
+				511597182,		// YLDY -> AKITA
+				583357499,		// YLDY -> ARCC
+				591414576,		// YLDY -> DEFLY
+				593126242,		// YLDY -> KTNC
+				593270704,		// YLDY -> TINY
+				593289960,		// YLDY -> TREES
+				593324268,		// YLDY -> BLOCK
+				596950925:		// YLDY -> HDL
+				records, err = exporter.ApplYieldlyStakingPools(records, txns)
 			
 			// Yieldly Liquidity Pools.
 			// https://app.yieldly.finance/liquidity-pools
@@ -192,7 +214,7 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				593294372,		// TREES/YLDY LP -> YLDY
 				593337625,		// BLOCK/YLDY LP -> YLDY
 				596954871:		// HDL/YLDY LP -> YLDY
-				records, err = exporter.ApplYieldlyLiquidityPools(assetMap, records)
+				records, err = exporter.ApplYieldlyLiquidityPools(records, txns)
 
 			// AKITA -> AKTA swap
 			// https://swap.akita.community/
@@ -200,7 +222,7 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			case 537279393:
 				records, err = exporter.ApplAkitaTokenSwap(assetMap, records)
 			default:
-				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
+				fmt.Printf("    noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
 
 		if err != nil {
