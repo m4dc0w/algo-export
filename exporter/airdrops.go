@@ -9,7 +9,7 @@ import (
 // AirdropASA exports transactions as an airdrop based on certain criteria.
 func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	// Assume Airdrops are usually done in 1 ASA deposit transaction.
-	if len(records) != 1 || !records[0].IsASADeposit() {
+	if !IsLengthExcludeReward(records, 1) || !records[0].IsASADeposit() {
 		return records, fmt.Errorf("invalid ASAAirdrop() record")
 	}
 
