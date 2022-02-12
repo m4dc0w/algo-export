@@ -73,6 +73,7 @@ type ExportRecord struct {
 	otherFee  bool  // Is this a withdrawal to cover Application calls (e.g. dapps).
 	reward    bool  // Is this a reward transaction - treat as income.
 	spend     bool  // Is this a spend transaction.
+	staking   bool  // used for coins received through staking. [Income Report]
 	trade     bool  // Is this a trade transaction.
 	feeTx     bool  // Is this a fee transaction.
 	txRaw     models.Transaction
