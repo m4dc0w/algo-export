@@ -15,7 +15,7 @@ import (
 // Treat Tinyman LP as a Split Trade.
 // https://cointracking.freshdesk.com/en/support/solutions/articles/29000038185-how-are-liquidity-pool-transactions-imported-
 // https://cointracking.freshdesk.com/en/support/solutions/articles/29000037542
-func ApplTinyman(assetMap map[uint64]models.Asset, records []ExportRecord,  txns []models.Transaction) ([]ExportRecord, error) {
+func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRecord, error) {
 	var processed []ExportRecord
 	onCompletion, action := ExtractFirstArg(txns)
 
