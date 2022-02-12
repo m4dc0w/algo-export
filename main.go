@@ -174,7 +174,7 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			// Version 1.1 - Mainnet Validator App ID: 552635992
 			// Version 1.0 - Mainnet Validator App ID: 350338509
 			case 552635992, 350338509:
-				records, err = exporter.ApplTinyman(assetMap, records, txns)
+				records, err = exporter.ApplTinyman(records, txns)
 
 			// Yieldly No-Loss Lottery.
 			// https://app.yieldly.finance/algo-prize-game
