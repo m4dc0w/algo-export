@@ -35,7 +35,30 @@ func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction
 
 // https://app.yieldly.finance/distribution
 func ApplYieldlyDistributionPools(records []ExportRecord, txns []models.Transaction) ([]ExportRecord, error) {
-	return records, nil
+	onCompletion, action := ExtractFirstArg(txns)
+
+	// Claim
+	if action == "CA" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
+		records[0].reward = true
+		records[0].comment = "Claim - Yieldly - Distribution Pools"
+		return records, nil
+	}
+
+	// Stake
+	if action == "S" && IsLengthExcludeReward(records, 4) && records[0].IsWithdrawal() {
+		records[0].comment = "Stake - Yieldly - Distribution Pools"
+		return records, nil
+	}
+
+	// Withdraw
+	if action == "W" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
+		records[1].comment = "Withdraw - Yieldly - Distribution Pools"
+		return records, nil
+	}
+	
+	// Opt-out is not implemented.
+
+	return records, fmt.Errorf("invalid ApplYieldlyDistributionPools() record | onCompletion: %s | action: %s | records length: %d | txns length: %d", onCompletion, action, len(records), len(txns))
 }
 
 func applYieldyStakingPoolArg(txns []models.Transaction) (string, string) {
