@@ -24,7 +24,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		processed = records
 		processed[0].reward = true
 		processed[0].comment = "Tinyman Redeem Excess Amounts"
-		processed[1].spend = true
+		processed[1].otherFee = true
 		return processed, nil
 	}
 
@@ -41,7 +41,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r.comment = "Tinyman Swap"
 		processed = append(processed, r)
 		processed = append(processed, records[2:]...)
-		processed[1].spend = true
+		processed[1].otherFee = true
 		return processed, nil
 	}
 
@@ -56,7 +56,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r.comment = "Tinyman Swap"
 		processed = append(processed, r)
 		processed = append(processed, records[2:]...)
-		processed[2].spend = true
+		processed[2].otherFee = true
 		return processed, nil
 	}
 
@@ -84,7 +84,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r2.comment = "Tinyman Liquidity Pool Deposit"
 		processed = append(processed, r2)
 		processed = append(processed, records[3:]...)
-		processed[3].spend = true
+		processed[3].otherFee = true
 		return processed, nil
 	}
 	// Deposit ASA-ASA Liquidity Pool.
@@ -110,7 +110,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r2.comment = "Tinyman Liquidity Pool Deposit"
 		processed = append(processed, r2)
 		processed = append(processed, records[4:]...)
-		processed[4].spend = true
+		processed[4].otherFee = true
 		return processed, nil
 	}
 	// Withdrawal ASA-ASA or ASA-ALGO Liquidity Pool.
@@ -135,7 +135,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r2.comment = "Tinyman Liquidity Pool Withdrawal"
 		processed = append(processed, r2)
 		processed = append(processed, records[4:]...)
-		processed[3].spend = true
+		processed[3].otherFee = true
 		return processed, nil
 	}
 	return processed, fmt.Errorf("invalid ApplTinyman() record | onCompletion: %s | action: %s | records length: %d | txns length: %d", onCompletion, action, len(records), len(txns))
