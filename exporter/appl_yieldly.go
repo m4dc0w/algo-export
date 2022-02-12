@@ -10,10 +10,17 @@ import (
 // https://app.yieldly.finance/algo-prize-game
 func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction) ([]ExportRecord, error) {
 	onCompletion, action := ExtractFirstArg(txns)
-	
+
+	// Claim
+	if action == "CA" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
+		records[1].reward = true
+		records[1].comment = "Claim - Yieldly - ALGO Weekly Prize Game"
+		return records, nil
+	}
+
 	// Deposit
 	if action == "D" && IsLengthExcludeReward(records, 3) && records[0].IsWithdrawal() {
-		records[1].comment = "Deposit - Yieldly - ALGO Weekly Prize Game"
+		records[0].comment = "Deposit - Yieldly - ALGO Weekly Prize Game"
 		return records, nil
 	}
 	
@@ -22,15 +29,8 @@ func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction
 		records[1].comment = "Withdraw - Yieldly - ALGO Weekly Prize Game"
 		return records, nil
 	}
-	
-	// Claim
-	if action == "CA" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
-		records[1].reward = true
-		records[1].comment = "Claim - Yieldly - ALGO Weekly Prize Game"
-		return records, nil
-	}
 
-	return records, fmt.Errorf("invalid ApplYieldlyStakingPoolsYLDYALGO() record | onCompletion: %s | action: %s | records length: %d | txns length: %d", onCompletion, action, len(records), len(txns))
+	return records, fmt.Errorf("invalid ApplYieldlyAlgoPrizeGame() record | onCompletion: %s | action: %s | records length: %d | txns length: %d", onCompletion, action, len(records), len(txns))
 }
 
 // https://app.yieldly.finance/distribution
@@ -52,7 +52,7 @@ func ApplYieldlyDistributionPools(records []ExportRecord, txns []models.Transact
 
 	// Withdraw
 	if action == "W" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
-		records[1].comment = "Withdraw - Yieldly - Distribution Pools"
+		records[0].comment = "Withdraw - Yieldly - Distribution Pools"
 		return records, nil
 	}
 	
