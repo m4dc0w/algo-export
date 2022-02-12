@@ -174,10 +174,16 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			// Version 1.1 - Mainnet Validator App ID: 552635992
 			// Version 1.0 - Mainnet Validator App ID: 350338509
 			case 552635992, 350338509:
-				records, err = exporter.ApplTinyman(assetMap, records)
+				records, err = exporter.ApplTinyman(assetMap, records, txns)
+
+			// Yieldly No-Loss Lottery.
+			// https://app.yieldly.finance/algo-prize-game
+			case 233725844:
+				records, err = exporter.ApplYieldlyAlgoPrizeGame(records, txns)
 
 			// Yieldly Staking Pool one to two.
 			case 233725850:	// YLDY -> YLDY/ALGO
+				records, err = exporter.ApplYieldlyStakingPoolsYLDYALGO(records, txns)
 
 			// Yieldly Staking Pools one to one.
 			// https://app.yieldly.finance/pools			
@@ -194,8 +200,8 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				498747685,		// ARCC -> ARCC
 				511597182,		// YLDY -> AKITA
 				583357499,		// YLDY -> ARCC
-				591414576,		// YLDY -> DEFLY
 				593126242,		// YLDY -> KTNC
+				591414576,		// YLDY -> DEFLY
 				593270704,		// YLDY -> TINY
 				593289960,		// YLDY -> TREES
 				593324268,		// YLDY -> BLOCK
@@ -222,7 +228,7 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			case 537279393:
 				records, err = exporter.ApplAkitaTokenSwap(assetMap, records)
 			default:
-				fmt.Printf("    noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
+				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
 
 		if err != nil {
