@@ -24,6 +24,7 @@ var formats = map[string]ExportFactory{}
 // https://cointracking.info/coin_charts.php
 var verifiedASA = map[uint64]string{
 	163650: "",         // ARCC
+	31566704: "",       // USDC
 	226701642: "",      // YLDY
 	230946361: "GEMS3", // Algogems
 	27165954: "",       // PLANETS
