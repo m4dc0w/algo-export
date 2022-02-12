@@ -2,15 +2,13 @@ package exporter
 
 import (
 	"fmt"
-
-	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
 // ApplAkitaTokenSwap exports Akita Token Swap.
 // AKITA -> AKTA swap
 // https://swap.akita.community/
 // https://algoexplorer.io/application/537279393
-func ApplAkitaTokenSwap(assetMap map[uint64]models.Asset, records []ExportRecord) ([]ExportRecord, error) {
+func ApplAkitaTokenSwap(records []ExportRecord) ([]ExportRecord, error) {
 	var processed []ExportRecord
 	if !IsLengthExcludeReward(records, 5) {
 		return records, fmt.Errorf("invalid ApplAkitaTokenSwap() record")
