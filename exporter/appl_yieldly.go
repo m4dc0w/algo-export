@@ -13,6 +13,7 @@ func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction
 
 	// Claim
 	if action == "CA" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
+		records[0].otherFee = true
 		records[1].reward = true
 		records[1].comment = "Claim - Yieldly - ALGO Weekly Prize Game"
 		return records, nil
@@ -26,6 +27,7 @@ func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction
 	
 	// Withdrawal
 	if action == "W" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
+		records[0].otherFee = true
 		records[1].comment = "Withdraw - Yieldly - ALGO Weekly Prize Game"
 		return records, nil
 	}
@@ -105,6 +107,7 @@ func ApplYieldlyStakingPoolsYLDYALGO(records []ExportRecord, txns []models.Trans
 
 	// Withdraw on TEAL4 contracts.
 	if action == "W" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
+		records[0].comment = "Withdraw - Yieldly - Staking Pools"
 		records[1].comment = "Withdraw - Yieldly - Staking Pools"
 		return records, nil
 	}
