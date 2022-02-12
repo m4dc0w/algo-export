@@ -209,6 +209,27 @@ func ExtractApplication(txns []models.Transaction) (models.TransactionApplicatio
 	return models.TransactionApplication{}, fmt.Errorf("transaction application not found")
 }
 
+func ExtractFirstArg(txns []models.Transaction) (string, string) {
+	for _, txn := range txns {
+		if txn.Type == "appl" {
+			appl := txn.ApplicationTransaction
+			if appl.OnCompletion != "noop" {
+				return appl.OnCompletion, ""  // e.g. closeout
+			}
+
+			// ApplicationArgs (apaa) transaction specific arguments.
+			for _, appa := range appl.ApplicationArgs {
+				// Return the first arg.
+				if string(appa) != "" {
+					return appl.OnCompletion, string(appa)
+				}
+				return appl.OnCompletion, string(appa)
+			}
+		}
+	}
+	return "", ""
+}
+
 // Parse a transaction block, converting into simple send / receive equivalents.
 // Sending from the account being scanned, or receiving (sometimes both in one tx)
 // Tracking apps seem to treat 'fees' a little differently and seem to assume they're specifically for trades.
