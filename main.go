@@ -222,11 +222,17 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				596954871:		// HDL/YLDY LP -> YLDY
 				records, err = exporter.ApplYieldlyLiquidityPools(records, txns)
 
+			// Yieldly Distribution Pools.
+			// https://app.yieldly.finance/distribution
+			case 470390215,	// XET -> XET
+				596947890:		// HDL -> HDL
+				records, err = exporter.ApplYieldlyDistributionPools(records, txns)
+
 			// AKITA -> AKTA swap
 			// https://swap.akita.community/
 			// https://algoexplorer.io/application/537279393
 			case 537279393:
-				records, err = exporter.ApplAkitaTokenSwap(assetMap, records)
+				records, err = exporter.ApplAkitaTokenSwap(records)
 			default:
 				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
