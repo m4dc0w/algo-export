@@ -44,6 +44,8 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 		fmt.Fprintf(writer, "Withdrawal,")
 	case record.mining:
 		fmt.Fprintf(writer, "Mining,")
+	case record.otherFee:
+		fmt.Fprintf(writer, "Other Fee,")
 	case record.reward:
 		fmt.Fprintf(writer, "Reward / Bonus,")
 	case record.spend:
