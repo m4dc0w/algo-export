@@ -70,6 +70,7 @@ type ExportRecord struct {
 	airdrop   bool  // Is this an airdrop - treat as income.
 	appl      bool  // Is this an application.
 	mining    bool  // Is this a mining.
+	otherFee  bool  // Is this a withdrawal to cover Application calls (e.g. dapps).
 	reward    bool  // Is this a reward transaction - treat as income.
 	spend     bool  // Is this a spend transaction.
 	trade     bool  // Is this a trade transaction.
