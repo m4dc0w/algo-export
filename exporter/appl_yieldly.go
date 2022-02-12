@@ -14,7 +14,7 @@ func ApplYieldlyAlgoPrizeGame(records []ExportRecord,  txns []models.Transaction
 	// Claim
 	if action == "CA" && IsLengthExcludeReward(records, 4) && records[1].IsDeposit() {
 		records[0].otherFee = true
-		records[1].reward = true
+		records[1].staking = true
 		records[1].comment = "Claim - Yieldly - ALGO Weekly Prize Game"
 		return records, nil
 	}
@@ -41,7 +41,7 @@ func ApplYieldlyDistributionPools(records []ExportRecord, txns []models.Transact
 
 	// Claim
 	if action == "CA" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
-		records[0].reward = true
+		records[0].staking = true
 		records[0].comment = "Claim - Yieldly - Distribution Pools"
 		return records, nil
 	}
@@ -91,9 +91,10 @@ func ApplYieldlyStakingPoolsYLDYALGO(records []ExportRecord, txns []models.Trans
 	
 	// Claim on TEAL4 contracts.
 	if action == "CAL" && IsLengthExcludeReward(records, 6) && records[1].IsDeposit() && records[2].IsDeposit() {
-		records[1].reward = true
+		records[0].otherFee = true
+		records[1].staking = true
 		records[1].comment = "Claim - Yieldly - Staking Pools"
-		records[2].reward = true
+		records[2].staking = true
 		records[2].comment = "Claim - Yieldly - Staking Pools"
 		return records, nil
 	}
@@ -123,7 +124,7 @@ func ApplYieldlyLiquidityPools(records []ExportRecord, txns []models.Transaction
 
 	// Claim.
 	if action == "claim" && IsLengthExcludeReward(records, 3) && records[1].IsDeposit() {
-		records[1].reward = true
+		records[1].staking = true
 		records[1].comment = "Claim - Yieldly - Liquidity Pools"
 		return records, nil
 	}
@@ -147,7 +148,7 @@ func ApplYieldlyLiquidityPools(records []ExportRecord, txns []models.Transaction
 				processed[i].comment = "Opt-out Withdraw - Yieldly - Liquidity Pools"
 			}
 			if strings.HasPrefix(r.topTxID, "1-0-inner-") {
-				processed[i].reward = true
+				processed[i].staking = true
 				processed[i].comment = "Opt-out Claim - Yieldly - Liquidity Pools"
 			}
 		}
@@ -167,7 +168,7 @@ func ApplYieldlyStakingPools(records []ExportRecord, txns []models.Transaction) 
 
 	// Claim on TEAL5 contracts.
 	if action == "claim" && IsLengthExcludeReward(records, 3) && records[1].IsDeposit() {
-		records[1].reward = true
+		records[1].staking = true
 		records[1].comment = "Claim - Yieldly - Staking Pools"
 		return records, nil
 	}
@@ -187,7 +188,7 @@ func ApplYieldlyStakingPools(records []ExportRecord, txns []models.Transaction) 
 	// Opt-out on TEAL4 & TEAL5 contracts.
 	if onCompletion == "closeout" && IsLengthExcludeReward(records, 4) {
 		records[0].comment = "Opt-out Withdraw - Yieldly - Staking Pools"
-		records[1].reward = true
+		records[1].staking = true
 		records[1].comment = "Opt-out Claim - Yieldly - Staking Pools"
 		return records, nil
 	}
@@ -197,7 +198,7 @@ func ApplYieldlyStakingPools(records []ExportRecord, txns []models.Transaction) 
 		case txns[0].Id == records[0].txid:	// 1st txn is withdraw.
 			records[0].comment = "Opt-out Withdraw - Yieldly - Staking Pools"
 		case txns[1].Id == records[0].txid: // 2nd txn is claim rewards.
-			records[0].reward = true
+			records[0].staking = true
 			records[0].comment = "Opt-out Claim - Yieldly - Staking Pools"
 		}
 		return records, nil
@@ -205,7 +206,7 @@ func ApplYieldlyStakingPools(records []ExportRecord, txns []models.Transaction) 
 
 	// Claim on TEAL4 contracts.
 	if action == "CA" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
-		records[0].reward = true
+		records[0].staking = true
 		records[0].comment = "Claim - Yieldly - Staking Pools"
 		return records, nil
 	}
