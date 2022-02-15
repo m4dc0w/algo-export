@@ -32,7 +32,7 @@ func (r ExportRecord) IsAlgomint() bool {
 // https://algomint.io/
 func DAppAlgomint(records []ExportRecord, assetMap map[uint64]models.Asset) ([]ExportRecord, error) {	
 	// Algomint transactions are done in 1 deposit/withdrawal transaction.
-	if !IsLengthExcludeReward(records, 1) || !records[0].IsAlgomint() {
+	if !(IsLengthExcludeReward(records, 1) || IsLengthExcludeReward(records, 2)) || !records[0].IsAlgomint() {
 		return records, fmt.Errorf("invalid DAppAlgomint() record")
 	}
 	var processed []ExportRecord
@@ -228,7 +228,7 @@ func DAppAlgomint(records []ExportRecord, assetMap map[uint64]models.Asset) ([]E
 		miningDepositRecord.sentASA = 0
 		miningDepositRecord.topTxID = "mining-fee-deposit-" + miningDepositRecord.txid
 		miningDepositRecord.recvCustomQty = "0.0025"
-		miningDepositRecord.recvCustomCurrency = "goETH"
+		miningDepositRecord.recvCustomCurrency = "ETH"
 		miningDepositRecord.comment = "Algomint - Mint goETH - mining fee deposit"
 		processed = append(processed, miningDepositRecord)
 
