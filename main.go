@@ -149,12 +149,19 @@ func toExportRecords(client *indexer.Client, export exporter.Interface, account 
 	return records, nil
 }
 
-func exportTransactions(client *indexer.Client, export exporter.Interface, account string, outCsv io.Writer, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) error {
+func writeRecords(export exporter.Interface, outCsv io.Writer, assetMap map[uint64]models.Asset, records []exporter.ExportRecord) {
+	for _, record := range records {
+		fmt.Printf("Writing %s\n", record.String())
+		export.WriteRecord(outCsv, assetMap, record)
+	}
+}
+
+func normalizeTransactions(client *indexer.Client, export exporter.Interface, account string, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) ([]exporter.ExportRecord, error) {
 	fmt.Printf("\nExport %d Transactions\n", len(txns))
 
 	records, err := toExportRecords(client, export, account, assetMap, topTxID, txns)
 	if err != nil {
-		return err
+		return records, err
 	}
 
 	// Applications (e.g. DeFi, Liquidity Pool) are usually part of a Group transaction.
@@ -175,15 +182,18 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 			// Version 1.0 - Mainnet Validator App ID: 350338509
 			case 552635992, 350338509:
 				records, err = exporter.ApplTinyman(records, txns)
+				return records, err
 
 			// Yieldly No-Loss Lottery.
 			// https://app.yieldly.finance/algo-prize-game
 			case 233725844:
 				records, err = exporter.ApplYieldlyAlgoPrizeGame(records, txns)
+				return records, err
 
 			// Yieldly Staking Pool one to two.
 			case 233725850:	// YLDY -> YLDY/ALGO
 				records, err = exporter.ApplYieldlyStakingPoolsYLDYALGO(records, txns)
+				return records, err
 
 			// Yieldly Staking Pools one to one.
 			// https://app.yieldly.finance/pools			
@@ -207,6 +217,7 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				593324268,		// YLDY -> BLOCK
 				596950925:		// YLDY -> HDL
 				records, err = exporter.ApplYieldlyStakingPools(records, txns)
+				return records, err
 			
 			// Yieldly Liquidity Pools.
 			// https://app.yieldly.finance/liquidity-pools
@@ -221,34 +232,28 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 				593337625,		// BLOCK/YLDY LP -> YLDY
 				596954871:		// HDL/YLDY LP -> YLDY
 				records, err = exporter.ApplYieldlyLiquidityPools(records, txns)
+				return records, err
 
 			// Yieldly Distribution Pools.
 			// https://app.yieldly.finance/distribution
 			case 470390215,	// XET -> XET
 				596947890:		// HDL -> HDL
 				records, err = exporter.ApplYieldlyDistributionPools(records, txns)
+				return records, err
 
 			// AKITA -> AKTA swap
 			// https://swap.akita.community/
 			// https://algoexplorer.io/application/537279393
 			case 537279393:
 				records, err = exporter.ApplAkitaTokenSwap(records)
+				return records, err
 			default:
 				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
 
 		if err != nil {
 			fmt.Printf("error exporting application ID %d: %w", appl.ApplicationId, err)
-			return err
-		}
-	}
-
-	// ASA Airdrops are usually done in 1 ASA deposit transaction.
-	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit() {
-		var err error
-		records, err = exporter.AirdropASA(records)
-		if err != nil {
-			return err
+			return records, err
 		}
 	}
 
@@ -257,11 +262,12 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 		var err error
 		r := records[0]
 		switch {
-		case r.IsASAMining(27165954):
+		case r.IsAssetIDDeposit(27165954):
 			records, err = exporter.MiningPlanets(records)
+			return records, err
 		}
 		if err != nil {
-			return err
+			return records, err
 		}
 	}
 
@@ -272,17 +278,37 @@ func exportTransactions(client *indexer.Client, export exporter.Interface, accou
 		switch {
 		case r.IsAlgorandGovernance():
 			records, err = exporter.RewardsAlgorandGovernance(records)
+			return records, err
 		}
 		if err != nil {
-			return err
+			return records, err
+		}
+	}
+	
+	// Other dApps.
+	if (exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit()) || (exporter.IsLengthExcludeReward(records, 2) && records[0].IsASAWithdrawal()) {
+		var err error
+		r := records[0]
+		switch {
+		case r.IsAlgomint():
+			records, err = exporter.DAppAlgomint(records, assetMap)
+			return records, err
+		}
+		if err != nil {
+			return records, err
 		}
 	}
 
-	for _, record := range records {
-		fmt.Printf("Writing %s\n", record.String())
-		export.WriteRecord(outCsv, assetMap, record)
+	// ASA Airdrops are usually done in 1 ASA deposit transaction.
+	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit() {
+		var err error
+		records, err = exporter.AirdropASA(records)
+		if err != nil {
+			return records, err
+		}
 	}
-	return nil
+
+	return records, nil
 }
 
 func exportAccounts(client *indexer.Client, export exporter.Interface, accounts accountList, outDir string) error {
@@ -298,8 +324,9 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 		startRound := state.ForAccount(export.Name(), account).LastRound + 1
 		fmt.Println(account, "starting at:", startRound)
 
-		var outCsv *os.File
 		var txnsGroup []models.Transaction
+		var records []exporter.ExportRecord
+		var outCsv *os.File
 
 		nextToken := ""
 		numPages := 1
@@ -335,9 +362,13 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 				}
 
 				// Current transaction is in different group, so export previous transaction group.
-				if err := exportTransactions(client, export, account, outCsv, assetMap, "", txnsGroup); err != nil {
+				records, err = normalizeTransactions(client, export, account, assetMap, "", txnsGroup)
+				if err != nil {
 					return err
 				}
+				writeRecords(export, outCsv, assetMap, records)
+				records = nil
+
 				txnsGroup = nil // Reset group.
 				txnsGroup = append(txnsGroup, tx)
 			}
@@ -349,6 +380,7 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 			// Rate limited to <1 request per second.
 			time.Sleep(2 * time.Second)
 		}
+		writeRecords(export, outCsv, assetMap, records)
 	}
 	state.SaveConfig()
 	return nil
