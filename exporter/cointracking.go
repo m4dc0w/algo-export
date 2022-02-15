@@ -59,6 +59,8 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 	}
 	// Buy Amount,Buy Currency,
 	switch {
+	case record.recvCustomQty != "" && record.recvCustomCurrency != "":
+		fmt.Fprintf(writer, "%s,%s,", record.recvCustomQty, record.recvCustomCurrency)
 	case record.recvQty != 0:
 		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.recvQty, record.recvASA, assetMap), asaFmt(record.recvASA, assetMap))
 	default:
@@ -66,6 +68,8 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 	}
 	// Sell Amount,Sell Currency,
 	switch {
+	case record.sentCustomQty != "" && record.sentCustomCurrency != "":
+		fmt.Fprintf(writer, "%s,%s,", record.sentCustomQty, record.sentCustomCurrency)
 	case record.sentQty != 0:
 		fmt.Fprintf(writer, "%s,%s,", assetIDFmt(record.sentQty, record.sentASA, assetMap), asaFmt(record.sentASA, assetMap))
 	default:
@@ -73,6 +77,8 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 	}
 	// Fee,Fee Currency,
 	switch {
+	case record.feeCustom != "" && record.feeCustomCurrency != "":
+		fmt.Fprintf(writer, "%s,%s,", record.feeCustom, record.feeCustomCurrency)
 	case record.fee != 0:
 		fmt.Fprintf(writer, "%s,ALGO,", algoFmt(record.fee))
 	default:
