@@ -67,6 +67,13 @@ type ExportRecord struct {
 	label     string
 	comment   string
 
+	recvCustomQty      string
+	recvCustomCurrency string
+	sentCustomQty      string
+	sentCustomCurrency string
+	feeCustom          string
+	feeCustomCurrency  string
+
 	airdrop   bool  // Is this an airdrop - treat as income.
 	appl      bool  // Is this an application.
 	mining    bool  // Is this a mining.
@@ -172,12 +179,16 @@ func (r ExportRecord) IsASADeposit() bool {
 	return r.recvASA != 0 && r.IsDeposit()
 }
 
-func (r ExportRecord) IsASAMining(assetID uint64) bool {
+func (r ExportRecord) IsAssetIDDeposit(assetID uint64) bool {
 	return r.recvASA == assetID && r.IsASADeposit()
 }
 
+func (r ExportRecord) IsAssetIDWithdrawal(assetID uint64) bool {
+	return r.sentASA == assetID && r.IsASAWithdrawal()
+}
+
 func (r ExportRecord) IsDeposit() bool {
-	return r.recvQty != 0 && r.sentQty == 0
+	return (r.recvQty != 0 && r.sentQty == 0) || (r.recvCustomQty != "" && r.sentCustomQty == "")
 }
 
 func (r ExportRecord) IsReward() bool {
@@ -185,11 +196,15 @@ func (r ExportRecord) IsReward() bool {
 }
 
 func (r ExportRecord) IsTrade() bool {
-	return r.recvQty != 0 && r.sentQty != 0
+	return (r.recvQty != 0 || r.recvCustomQty != "") && (r.sentQty != 0 || r.sentCustomQty != "")
+}
+
+func (r ExportRecord) IsASAWithdrawal() bool {
+	return r.sentASA != 0 && r.IsWithdrawal()
 }
 
 func (r ExportRecord) IsWithdrawal() bool {
-	return r.recvQty == 0 && r.sentQty != 0 && !r.feeTx
+	return (r.recvQty == 0 && r.sentQty != 0 && !r.feeTx) || (r.recvCustomQty == "" && r.sentCustomQty != "" && !r.otherFee)
 }
 
 func (r ExportRecord) String() string {
