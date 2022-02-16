@@ -219,7 +219,7 @@ func ApplYieldlyStakingPools(records []ExportRecord, txns []models.Transaction) 
 
 	// Withdraw on TEAL4 contracts.
 	if action == "W" && IsLengthExcludeReward(records, 3) && records[0].IsDeposit() {
-		records[1].comment = "Withdraw - Yieldly - Staking Pools"
+		records[0].comment = "Withdraw - Yieldly - Staking Pools"
 		return records, nil
 	}
 
