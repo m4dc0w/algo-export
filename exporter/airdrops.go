@@ -10,7 +10,7 @@ import (
 func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	// Assume Airdrops are usually done in 1 ASA deposit transaction.
 	if !IsLengthExcludeReward(records, 1) || !records[0].IsASADeposit() {
-		return records, fmt.Errorf("invalid ASAAirdrop() record")
+		return records, fmt.Errorf("invalid AirdropASA() record")
 	}
 
 	r := records[0]
@@ -53,6 +53,76 @@ func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	if strings.Contains(comment, "- powered by Freckle Token airdrop tool") {
 		records[0].airdrop = true
 		records[0].comment = comment
+		return records, nil
 	}
+	
+	// Generic Airdrop
+	if strings.Contains(strings.ToLower(comment), "airdrop") {
+		records[0].airdrop = true
+		records[0].comment = strings.Join([]string{"Generic Airdrop", comment}, " | ")
+		return records, nil
+	}
+	
+	// Generic Staking
+	if strings.Contains(strings.ToLower(comment), "staking") {
+		records[0].staking = true
+		records[0].comment = strings.Join([]string{"Generic Staking", comment}, " | ")
+		return records, nil
+	}
+
+	// Generic Reward
+	if strings.Contains(strings.ToLower(comment), "reward") {
+		records[0].reward = true
+		records[0].comment = strings.Join([]string{"Generic Reward", comment}, " | ")
+		return records, nil
+	}
+
+	return records, nil
+}
+
+// AirdropALGO exports transactions as an airdrop based on certain criteria.
+func AirdropALGO(records []ExportRecord) ([]ExportRecord, error) {
+	// Assume Airdrops are usually done in 1 ASA deposit transaction.
+	if !IsLengthExcludeReward(records, 1) || !records[0].IsALGODeposit() {
+		return records, fmt.Errorf("invalid AirdropALGO() record")
+	}
+
+	r := records[0]
+
+	if len(r.txRaw.Note) == 0 {
+		return records, nil
+	}
+
+	// Use tx note contents to determine if tx is an airdrop.
+	note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
+	decoded, err := base64.StdEncoding.DecodeString(note)
+	if err != nil {
+		fmt.Println("decode error:", err)
+		return records, err
+	}
+
+	comment := string(decoded)
+
+	// Generic Airdrop
+	if strings.Contains(strings.ToLower(comment), "airdrop") {
+		records[0].airdrop = true
+		records[0].comment = strings.Join([]string{"Generic Airdrop", comment}, " | ")
+		return records, nil
+	}
+
+	// Generic Staking
+	if strings.Contains(strings.ToLower(comment), "staking") {
+		records[0].staking = true
+		records[0].comment = strings.Join([]string{"Generic Staking", comment}, " | ")
+		return records, nil
+	}
+
+	// Generic Reward
+	if strings.Contains(strings.ToLower(comment), "reward") {
+		records[0].reward = true
+		records[0].comment = strings.Join([]string{"Generic Reward", comment}, " | ")
+		return records, nil
+	}
+
 	return records, nil
 }
