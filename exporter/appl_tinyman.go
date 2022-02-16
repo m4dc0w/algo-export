@@ -78,7 +78,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r2.txid = records[2].txid
 		r2.appl = true
 		r2.trade = true
-		r2.recvQty = records[0].recvQty - r1.recvQty
+		r2.recvQty = records[0].recvQty - r1.recvQty  // Original qty could be an odd number, so use subtraction instead of dividing by 2.
 		r2.sentQty = records[2].sentQty
 		r2.sentASA = records[2].sentASA
 		r2.comment = "Tinyman Liquidity Pool Deposit"
@@ -104,7 +104,7 @@ func ApplTinyman(records []ExportRecord,  txns []models.Transaction) ([]ExportRe
 		r2.txid = records[3].txid
 		r2.appl = true
 		r2.trade = true
-		r2.recvQty = records[0].recvQty - r1.recvQty
+		r2.recvQty = records[0].recvQty - r1.recvQty  // Original qty could be an odd number, so use subtraction instead of dividing by 2.
 		r2.sentQty = records[3].sentQty
 		r2.sentASA = records[3].sentASA
 		r2.comment = "Tinyman Liquidity Pool Deposit"
