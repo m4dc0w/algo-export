@@ -299,10 +299,19 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		}
 	}
 
-	// ASA Airdrops are usually done in 1 ASA deposit transaction.
+	// ASA Airdrops/Rewards are usually done in 1 ASA deposit transaction.
 	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsASADeposit() {
 		var err error
 		records, err = exporter.AirdropASA(records)
+		if err != nil {
+			return records, err
+		}
+	}
+
+	// Airdrops/Rewards are usually done in 1 ALGO deposit transaction.
+	if exporter.IsLengthExcludeReward(records, 1) && records[0].IsALGODeposit() {
+		var err error
+		records, err = exporter.AirdropALGO(records)
 		if err != nil {
 			return records, err
 		}
