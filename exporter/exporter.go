@@ -175,6 +175,10 @@ func asaComment(assetID uint64, assetMap map[uint64]models.Asset) string {
 	return fmt.Sprintf("%s-%d | %s", val.Params.UnitName, assetID, val.Params.Name)
 }
 
+func (r ExportRecord) IsALGODeposit() bool {
+	return r.recvASA == 0 && r.IsDeposit()
+}
+
 func (r ExportRecord) IsASADeposit() bool {
 	return r.recvASA != 0 && r.IsDeposit()
 }
@@ -197,6 +201,10 @@ func (r ExportRecord) IsReward() bool {
 
 func (r ExportRecord) IsTrade() bool {
 	return (r.recvQty != 0 || r.recvCustomQty != "") && (r.sentQty != 0 || r.sentCustomQty != "")
+}
+
+func (r ExportRecord) IsALGOWithdrawal() bool {
+	return r.recvASA == 0 && r.IsWithdrawal()
 }
 
 func (r ExportRecord) IsASAWithdrawal() bool {
