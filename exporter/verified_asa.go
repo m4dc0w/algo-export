@@ -14,5 +14,6 @@ var verifiedASA = map[uint64]string{
 	283820866: "",       // XET
 	287867876: "",       // OPUL
 	300208676: "SMILE2", // SMILE
+	444035862: "ZONE2",  // ZONE
 	470842789: "DEFLY2", // DEFLY
 }
