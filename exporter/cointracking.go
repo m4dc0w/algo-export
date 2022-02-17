@@ -93,10 +93,10 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 
 	// Comment,
 	var comments []string
-	if record.recvASA != 0 {
+	if record.recvASA != 0 && asaComment(record.recvASA, assetMap) != "" {
 		comments = append(comments, asaComment(record.recvASA, assetMap))
 	}
-	if record.sentASA != 0 && record.recvASA != record.sentASA {
+	if record.sentASA != 0 && record.recvASA != record.sentASA && asaComment(record.sentASA, assetMap) != "" {
 		comments = append(comments, asaComment(record.sentASA, assetMap))
 	}
 	if record.comment != "" {
