@@ -208,6 +208,19 @@ func (r ExportRecord) String() string {
 	return fmt.Sprintf("| TopTxID: %s | txID: %s | Group: %s | recv: %d %d | sent: %d %d | sender: %s | receiver: %s | comment: %s", r.topTxID, r.txid, base64.StdEncoding.EncodeToString(r.txRaw.Group), r.recvQty, r.recvASA, r.sentQty, r.sentASA, r.sender, r.receiver, r.comment)
 }
 
+func (r ExportRecord) DecodeNote() (string, error) {
+	if len(r.txRaw.Note) == 0 {
+		return "", nil
+	}
+	note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
+	decoded, err := base64.StdEncoding.DecodeString(note)
+	if err != nil {
+		fmt.Println("decode error:", err)
+		return "", err
+	}
+	return string(decoded), nil
+}
+
 func IsLengthExcludeReward(records []ExportRecord, length int) bool {
 	if length < 0 {
 		return false
