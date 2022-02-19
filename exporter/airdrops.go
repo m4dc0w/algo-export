@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	"encoding/base64"
 	"fmt"
 	"strings"
 )
@@ -39,61 +38,54 @@ func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	// https://www.reddit.com/r/kittencoin_ASA/
 	if r.sender == "VJX642MGL7545K3IIZJEPORSZXU4PWEEGJIAQYL3I247GAMUPNJCYNRBOQ" && r.IsAssetIDDeposit(361671874) && r.sender != r.account {
 		records[0].airdrop = true
-		if len(r.txRaw.Note) == 0 {
+		note, err := r.DecodeNote()
+		if err != nil {
+			return records, err
+		}
+		if note == "" {
 			records[0].comment = "KittenCoin Team Airdrop"
 			return records, nil
 		}
-		note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
-		decoded, err := base64.StdEncoding.DecodeString(note)
-		if err != nil {
-			fmt.Println("decode error:", err)
-			return records, err
-		}
-		comment := string(decoded)
-		records[0].comment = strings.Join([]string{"KittenCoin Team Airdrop", comment}, " | ")
-		return records, nil
-	}
-
-	if len(r.txRaw.Note) == 0 {
+		records[0].comment = strings.Join([]string{"KittenCoin Team Airdrop", note}, " | ")
 		return records, nil
 	}
 
 	// Use tx note contents to determine if tx is an airdrop.
-	note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
-	decoded, err := base64.StdEncoding.DecodeString(note)
+	note, err := r.DecodeNote()
 	if err != nil {
-		fmt.Println("decode error:", err)
 		return records, err
 	}
+	if note == "" {
+		return records, nil
+	}
 
-	comment := string(decoded)
 	// https://www.freckletoken.com/tools/airdrop
 	// Example note:
 	//   "ASA Drop" - powered by Freckle Token airdrop tool
-	if strings.Contains(comment, "- powered by Freckle Token airdrop tool") {
+	if strings.Contains(note, "- powered by Freckle Token airdrop tool") {
 		records[0].airdrop = true
-		records[0].comment = comment
+		records[0].comment = note
 		return records, nil
 	}
 	
 	// Generic Airdrop
-	if strings.Contains(strings.ToLower(comment), "airdrop") {
+	if strings.Contains(strings.ToLower(note), "airdrop") {
 		records[0].airdrop = true
-		records[0].comment = strings.Join([]string{"Generic Airdrop", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Airdrop", note}, " | ")
 		return records, nil
 	}
 	
 	// Generic Staking
-	if strings.Contains(strings.ToLower(comment), "staking") {
+	if strings.Contains(strings.ToLower(note), "staking") {
 		records[0].staking = true
-		records[0].comment = strings.Join([]string{"Generic Staking", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Staking", note}, " | ")
 		return records, nil
 	}
 
 	// Generic Reward
-	if strings.Contains(strings.ToLower(comment), "reward") {
+	if strings.Contains(strings.ToLower(note), "reward") {
 		records[0].reward = true
-		records[0].comment = strings.Join([]string{"Generic Reward", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Reward", note}, " | ")
 		return records, nil
 	}
 
@@ -109,38 +101,33 @@ func AirdropALGO(records []ExportRecord) ([]ExportRecord, error) {
 
 	r := records[0]
 
-	if len(r.txRaw.Note) == 0 {
+	// Use tx note contents to determine if tx is an airdrop.
+	note, err := r.DecodeNote()
+	if err != nil {
+		return records, err
+	}
+	if note == "" {
 		return records, nil
 	}
 
-	// Use tx note contents to determine if tx is an airdrop.
-	note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
-	decoded, err := base64.StdEncoding.DecodeString(note)
-	if err != nil {
-		fmt.Println("decode error:", err)
-		return records, err
-	}
-
-	comment := string(decoded)
-
 	// Generic Airdrop
-	if strings.Contains(strings.ToLower(comment), "airdrop") {
+	if strings.Contains(strings.ToLower(note), "airdrop") {
 		records[0].airdrop = true
-		records[0].comment = strings.Join([]string{"Generic Airdrop", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Airdrop", note}, " | ")
 		return records, nil
 	}
 
 	// Generic Staking
-	if strings.Contains(strings.ToLower(comment), "staking") {
+	if strings.Contains(strings.ToLower(note), "staking") {
 		records[0].staking = true
-		records[0].comment = strings.Join([]string{"Generic Staking", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Staking", note}, " | ")
 		return records, nil
 	}
 
 	// Generic Reward
-	if strings.Contains(strings.ToLower(comment), "reward") {
+	if strings.Contains(strings.ToLower(note), "reward") {
 		records[0].reward = true
-		records[0].comment = strings.Join([]string{"Generic Reward", comment}, " | ")
+		records[0].comment = strings.Join([]string{"Generic Reward", note}, " | ")
 		return records, nil
 	}
 
