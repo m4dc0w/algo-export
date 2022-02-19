@@ -241,6 +241,23 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 				records, err = exporter.ApplYieldlyDistributionPools(records, txns)
 				return records, err
 
+			// AlgoFi
+			// https://app.algofi.org/
+			case 465814065, // ALGO
+				465814103,    // USDC
+				465814149,    // goBTC
+				465814222,    // goETH
+				465814278:    // STBL
+				records, err = exporter.ApplAlgoFiMarket(records, txns)
+				return records, err
+
+			// AlgoFi Staking
+			// https://app.algofi.org/staking
+			case 465865291, // STBL -> STBL
+				553869413:    // STBL-USDC-LP-V2 -> ALGO/STBL
+				fmt.Printf("    AlgoFi Staking for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
+				return records, err
+
 			// AKITA -> AKTA swap
 			// https://swap.akita.community/
 			// https://algoexplorer.io/application/537279393
