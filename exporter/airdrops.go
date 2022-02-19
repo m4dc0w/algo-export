@@ -28,9 +28,29 @@ func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	// General Flamingo coin airdrop address.
 	// https://www.reddit.com/r/FlamingoCoin
 	// https://flamingocoin.org/
-	if r.sender =="6NHQRVFZIBAII4PV2CN7XTYPP5DWQC6YKA37MA2OI2DRIEMTSVNF2TVYAY" && r.recvASA == 406383570 && r.sender != r.account {
+	if r.sender == "6NHQRVFZIBAII4PV2CN7XTYPP5DWQC6YKA37MA2OI2DRIEMTSVNF2TVYAY" && r.IsAssetIDDeposit(406383570) && r.sender != r.account {
 		records[0].airdrop = true
 		records[0].comment = "Flamingo Coin Team Airdrop"
+		return records, nil
+	}
+
+	// General KittenCoin ASA airdrop address.
+	// https://www.kittencoin-asa.net/
+	// https://www.reddit.com/r/kittencoin_ASA/
+	if r.sender == "VJX642MGL7545K3IIZJEPORSZXU4PWEEGJIAQYL3I247GAMUPNJCYNRBOQ" && r.IsAssetIDDeposit(406383570) && r.sender != r.account {
+		records[0].airdrop = true
+		if len(r.txRaw.Note) == 0 {
+			records[0].comment = "KittenCoin Team Airdrop"
+			return records, nil
+		}
+		note := base64.StdEncoding.EncodeToString(r.txRaw.Note)
+		decoded, err := base64.StdEncoding.DecodeString(note)
+		if err != nil {
+			fmt.Println("decode error:", err)
+			return records, err
+		}
+		comment := string(decoded)
+		records[0].comment = strings.Join([]string{"KittenCoin Team Airdrop", comment}, " | ")
 		return records, nil
 	}
 
