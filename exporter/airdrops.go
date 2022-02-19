@@ -37,7 +37,7 @@ func AirdropASA(records []ExportRecord) ([]ExportRecord, error) {
 	// General KittenCoin ASA airdrop address.
 	// https://www.kittencoin-asa.net/
 	// https://www.reddit.com/r/kittencoin_ASA/
-	if r.sender == "VJX642MGL7545K3IIZJEPORSZXU4PWEEGJIAQYL3I247GAMUPNJCYNRBOQ" && r.IsAssetIDDeposit(406383570) && r.sender != r.account {
+	if r.sender == "VJX642MGL7545K3IIZJEPORSZXU4PWEEGJIAQYL3I247GAMUPNJCYNRBOQ" && r.IsAssetIDDeposit(361671874) && r.sender != r.account {
 		records[0].airdrop = true
 		if len(r.txRaw.Note) == 0 {
 			records[0].comment = "KittenCoin Team Airdrop"
