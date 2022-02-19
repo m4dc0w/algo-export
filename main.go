@@ -279,6 +279,9 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		case r.IsAlgorandGovernance():
 			records, err = exporter.RewardsAlgorandGovernance(records)
 			return records, err
+		case r.IsAlgoStake():
+			records, err = exporter.RewardsAlgoStake(records)
+			return records, err
 		}
 		if err != nil {
 			return records, err
