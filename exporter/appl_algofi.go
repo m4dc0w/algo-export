@@ -1,6 +1,8 @@
 package exporter
 
 import (
+	"fmt"
+
 	"github.com/algorand/go-algorand-sdk/client/v2/common/models"
 )
 
