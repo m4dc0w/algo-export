@@ -7,7 +7,7 @@ import (
 )
 
 func (r ExportRecord) IsAlgorandGovernance() bool {
-	if r.recvASA != 0 || !r.IsDeposit() {
+	if !r.IsALGODeposit() {
 		return false
 	}
 
@@ -53,5 +53,30 @@ func RewardsAlgorandGovernance(records []ExportRecord) ([]ExportRecord, error) {
 		records[0].reward = true
 		records[0].comment = strings.Join([]string{"Algorand Governance Rewards", comment}, " | ")
 	}
+	return records, nil
+}
+
+func (r ExportRecord) IsAlgoStake() bool {
+	if !r.IsASADeposit() {
+		return false
+	}
+
+	if r.sender == r.account {
+		return false
+	}
+
+	// AlgoStake Wallet
+	if r.sender == "4ZK3UPFRJ643ETWSWZ4YJXH3LQTL2FUEI6CIT7HEOVZL6JOECVRMPP34CY" {
+		return true
+	}
+	return false
+}
+
+func RewardsAlgoStake(records []ExportRecord) ([]ExportRecord, error) {	
+	if !IsLengthExcludeReward(records, 1) || !records[0].IsAlgoStake() {
+		return records, fmt.Errorf("invalid RewardsAlgoStake() record")
+	}
+	records[0].staking = true
+	records[0].comment = "AlgoStake"
 	return records, nil
 }
