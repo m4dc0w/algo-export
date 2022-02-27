@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/m4dc0w/algo-export/exporter"
 )
 
 func stateFile() string {
@@ -23,6 +25,13 @@ type AccountExportState map[string]*state
 
 type state struct {
 	LastRound uint64
+	AlgoFi    exporter.AlgoFiState
+}
+
+func newState() *state {
+	return &state{
+		AlgoFi: exporter.AlgoFiState{},
+	}
 }
 
 // LoadConfig hande
@@ -48,10 +57,10 @@ func (s ExportState) ForAccount(format string, account string) *state {
 		if retState, found := exportState[account]; found {
 			return retState
 		}
-		s[format][account] = &state{}
+		s[format][account] = newState()
 		return s[format][account]
 	}
-	s[format] = AccountExportState{account: &state{}}
+	s[format] = AccountExportState{account: newState()}
 	return s[format][account]
 }
 
