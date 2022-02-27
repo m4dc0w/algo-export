@@ -62,9 +62,11 @@ type ExportRecord struct {
 
 	airdrop      bool  // Is this an airdrop - treat as income.
 	appl         bool  // Is this an application.
+	borrow       bool  // used for fees due from borrowing currencies. [Fee Report]
 	expenseNoTax bool  // Expense (non taxable).
 	mining       bool  // Is this a mining.
 	incomeNoTax  bool  // Income (non taxable).
+	lending      bool  // used for all income from lending coins and currencies. [Income Report]
 	otherFee     bool  // Is this a withdrawal to cover Application calls (e.g. dapps).
 	reward       bool  // Is this a reward transaction - treat as income.
 	spend        bool  // Is this a spend transaction.
