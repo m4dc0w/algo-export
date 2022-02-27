@@ -40,12 +40,16 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 	switch {
 	case record.airdrop:
 		fmt.Fprintf(writer, "Airdrop,")
+	case record.borrow:
+		fmt.Fprintf(writer, "Borrowing Fee,")
 	case record.expenseNoTax:
 	  fmt.Fprintf(writer, "Expense (non taxable),")
 	case record.feeTx || record.otherFee:
 		fmt.Fprintf(writer, "Other Fee,")
 	case record.incomeNoTax:
 	  fmt.Fprintf(writer, "Income (non taxable),")
+	case record.lending:
+		fmt.Fprintf(writer, "Lending Income,")
 	case record.mining:
 		fmt.Fprintf(writer, "Mining,")
 	case record.reward:
@@ -121,10 +125,14 @@ func (k *cointrackingExporter) WriteRecord(writer io.Writer, assetMap map[uint64
 	switch {
 	case record.airdrop:
 		fmt.Fprintf(writer, "_airdrop")
+	case record.borrow:
+		fmt.Fprintf(writer, "_borrow")
 	case record.appl:
 		fmt.Fprintf(writer, "_appl")
 	case record.feeTx:
 		fmt.Fprintf(writer, "_fee")
+	case record.lending:
+		fmt.Fprintf(writer, "_lending")
 	case record.mining:
 		fmt.Fprintf(writer, "_mining")
 	case record.reward:
