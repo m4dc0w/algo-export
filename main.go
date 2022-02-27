@@ -156,12 +156,14 @@ func writeRecords(export exporter.Interface, outCsv io.Writer, assetMap map[uint
 	}
 }
 
-func normalizeTransactions(client *indexer.Client, export exporter.Interface, account string, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) ([]exporter.ExportRecord, error) {
+func normalizeTransactions(client *indexer.Client, export exporter.Interface, account string, assetMap map[uint64]models.Asset, topTxID string, txns []models.Transaction) ([]exporter.ExportRecord, bool, error) {
 	fmt.Printf("\nExport %d Transactions\n", len(txns))
+	
+	var deferred bool
 
 	records, err := toExportRecords(client, export, account, assetMap, topTxID, txns)
 	if err != nil {
-		return records, err
+		return records, deferred, err
 	}
 
 	// Applications (e.g. DeFi, Liquidity Pool) are usually part of a Group transaction.
@@ -182,18 +184,18 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 			// Version 1.0 - Mainnet Validator App ID: 350338509
 			case 552635992, 350338509:
 				records, err = exporter.ApplTinyman(records, txns)
-				return records, err
+				return records, deferred, err
 
 			// Yieldly No-Loss Lottery.
 			// https://app.yieldly.finance/algo-prize-game
 			case 233725844:
 				records, err = exporter.ApplYieldlyAlgoPrizeGame(records, txns)
-				return records, err
+				return records, deferred, err
 
 			// Yieldly Staking Pool one to two.
 			case 233725850:	// YLDY -> YLDY/ALGO
 				records, err = exporter.ApplYieldlyStakingPoolsYLDYALGO(records, txns)
-				return records, err
+				return records, deferred, err
 
 			// Yieldly Staking Pools one to one.
 			// https://app.yieldly.finance/pools			
@@ -217,7 +219,7 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 				593324268,		// YLDY -> BLOCK
 				596950925:		// YLDY -> HDL
 				records, err = exporter.ApplYieldlyStakingPools(records, txns)
-				return records, err
+				return records, deferred, err
 			
 			// Yieldly Liquidity Pools.
 			// https://app.yieldly.finance/liquidity-pools
@@ -232,14 +234,14 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 				593337625,		// BLOCK/YLDY LP -> YLDY
 				596954871:		// HDL/YLDY LP -> YLDY
 				records, err = exporter.ApplYieldlyLiquidityPools(records, txns)
-				return records, err
+				return records, deferred, err
 
 			// Yieldly Distribution Pools.
 			// https://app.yieldly.finance/distribution
 			case 470390215,	// XET -> XET
 				596947890:		// HDL -> HDL
 				records, err = exporter.ApplYieldlyDistributionPools(records, txns)
-				return records, err
+				return records, deferred, err
 
 			// AlgoFi
 			// https://app.algofi.org/
@@ -248,29 +250,29 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 				465814149,    // goBTC
 				465814222,    // goETH
 				465814278:    // STBL
-				records, err = exporter.ApplAlgoFiMarket(records, txns)
-				return records, err
+				deferred = true
+				return records, deferred, err
 
 			// AlgoFi Staking
 			// https://app.algofi.org/staking
 			case 465865291, // STBL -> STBL
 				553869413:    // STBL-USDC-LP-V2 -> ALGO/STBL
 				fmt.Printf("    AlgoFi Staking for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
-				return records, err
+				return records, deferred, err
 
 			// AKITA -> AKTA swap
 			// https://swap.akita.community/
 			// https://algoexplorer.io/application/537279393
 			case 537279393:
 				records, err = exporter.ApplAkitaTokenSwap(records)
-				return records, err
+				return records, deferred, err
 			default:
 				fmt.Printf("    Noop for Application ID: %d | group id: %s\n", appl.ApplicationId, groupID)
 		}
 
 		if err != nil {
 			fmt.Printf("error exporting application ID %d: %w", appl.ApplicationId, err)
-			return records, err
+			return records, deferred, err
 		}
 	}
 
@@ -281,10 +283,10 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		switch {
 		case r.IsAssetIDDeposit(27165954):
 			records, err = exporter.MiningPlanets(records)
-			return records, err
+			return records, deferred, err
 		}
 		if err != nil {
-			return records, err
+			return records, deferred, err
 		}
 	}
 
@@ -295,13 +297,13 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		switch {
 		case r.IsAlgorandGovernance():
 			records, err = exporter.RewardsAlgorandGovernance(records)
-			return records, err
+			return records, deferred, err
 		case r.IsAlgoStake():
 			records, err = exporter.RewardsAlgoStake(records)
-			return records, err
+			return records, deferred, err
 		}
 		if err != nil {
-			return records, err
+			return records, deferred, err
 		}
 	}
 	
@@ -312,10 +314,10 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		switch {
 		case r.IsAlgomint():
 			records, err = exporter.DAppAlgomint(records, assetMap)
-			return records, err
+			return records, deferred, err
 		}
 		if err != nil {
-			return records, err
+			return records, deferred, err
 		}
 	}
 
@@ -324,7 +326,7 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		var err error
 		records, err = exporter.AirdropASA(records)
 		if err != nil {
-			return records, err
+			return records, deferred, err
 		}
 	}
 
@@ -333,11 +335,11 @@ func normalizeTransactions(client *indexer.Client, export exporter.Interface, ac
 		var err error
 		records, err = exporter.AirdropALGO(records)
 		if err != nil {
-			return records, err
+			return records, deferred, err
 		}
 	}
 
-	return records, nil
+	return records, deferred, nil
 }
 
 func exportAccounts(client *indexer.Client, export exporter.Interface, accounts accountList, outDir string) error {
@@ -355,6 +357,8 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 
 		var txnsGroup []models.Transaction
 		var records []exporter.ExportRecord
+		var recordsDeferred [][]exporter.ExportRecord
+		var txnsDeferred [][]models.Transaction
 		var outCsv *os.File
 
 		nextToken := ""
@@ -389,15 +393,20 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 					txnsGroup = append(txnsGroup, tx)
 					continue
 				}
-
+				var deferred bool
 				// Current transaction is in different group, so export previous transaction group.
-				records, err = normalizeTransactions(client, export, account, assetMap, "", txnsGroup)
+				records, deferred, err = normalizeTransactions(client, export, account, assetMap, "", txnsGroup)
 				if err != nil {
 					return err
 				}
-				writeRecords(export, outCsv, assetMap, records)
-				records = nil
+				if deferred {
+					recordsDeferred = append(recordsDeferred, records)
+					txnsDeferred = append(txnsDeferred, txnsGroup)
+				} else {
+					writeRecords(export, outCsv, assetMap, records)
+				}
 
+				records = nil
 				txnsGroup = nil // Reset group.
 				txnsGroup = append(txnsGroup, tx)
 			}
@@ -410,6 +419,27 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 			time.Sleep(2 * time.Second)
 		}
 		writeRecords(export, outCsv, assetMap, records)
+		records = nil
+		txnsGroup = nil
+
+		// Process deferred AlgoFi records.
+		if len(txnsDeferred) != len(recordsDeferred) {
+			return fmt.Errorf("length of deferred txns and records are not equal")
+		}
+		fmt.Printf("Deferred AlgoFi Transactions %d\n", len(txnsDeferred))
+		for i := len(txnsDeferred)-1; i >= 0; i-- {
+			var err error
+			fmt.Printf("  Group %d\n", i)
+			for _, r := range recordsDeferred[i] {
+				fmt.Printf("    %s\n", r.String())
+			}
+			records, state.ForAccount(export.Name(), account).AlgoFi, err = exporter.ApplAlgoFiLend(recordsDeferred[i], txnsDeferred[i], assetMap, state.ForAccount(export.Name(), account).AlgoFi)
+			if err != nil {
+				return err
+			}
+			writeRecords(export, outCsv, assetMap, records)
+			records = nil
+		}
 	}
 	state.SaveConfig()
 	return nil
