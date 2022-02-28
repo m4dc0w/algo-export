@@ -157,7 +157,7 @@ func ApplAlgoFiLend(records []ExportRecord, txns []models.Transaction, assetMap 
 				processed = append(processed, r)
 				state.BorrowALGO = 0
 			} else {
-				state.BorrowALGO = state.BorrowALGO - r.sentQty
+				state.BorrowALGO = state.BorrowALGO - (r.sentQty - r.fee)
 			}
 		case "STBL":
 			if r.sentQty > state.BorrowSTBL {
