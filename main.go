@@ -418,7 +418,19 @@ func exportAccounts(client *indexer.Client, export exporter.Interface, accounts 
 			// Rate limited to <1 request per second.
 			time.Sleep(2 * time.Second)
 		}
-		writeRecords(export, outCsv, assetMap, records)
+		// Export final transaction(s).
+		if len(txnsGroup) > 0 {
+			records, deferred, err := normalizeTransactions(client, export, account, assetMap, "", txnsGroup)
+			if err != nil {
+				return err
+			}
+			if deferred {
+				recordsDeferred = append(recordsDeferred, records)
+				txnsDeferred = append(txnsDeferred, txnsGroup)
+			} else {
+				writeRecords(export, outCsv, assetMap, records)
+			}
+		}
 		records = nil
 		txnsGroup = nil
 
