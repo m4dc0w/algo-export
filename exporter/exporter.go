@@ -243,10 +243,6 @@ func ExtractFirstArg(txns []models.Transaction) (string, string) {
 	for _, txn := range txns {
 		if txn.Type == "appl" {
 			appl := txn.ApplicationTransaction
-			if appl.OnCompletion != "noop" {
-				return appl.OnCompletion, ""  // e.g. closeout
-			}
-
 			// ApplicationArgs (apaa) transaction specific arguments.
 			for _, appa := range appl.ApplicationArgs {
 				// Return the first arg.
@@ -254,6 +250,10 @@ func ExtractFirstArg(txns []models.Transaction) (string, string) {
 					return appl.OnCompletion, string(appa)
 				}
 				return appl.OnCompletion, string(appa)
+			}
+
+			if appl.OnCompletion != "noop" {
+				return appl.OnCompletion, ""  // e.g. closeout
 			}
 		}
 	}
