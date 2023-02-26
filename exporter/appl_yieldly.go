@@ -58,6 +58,14 @@ func ApplYieldlyDistributionPools(records []ExportRecord, txns []models.Transact
 		return records, nil
 	}
 	
+	// Claim and Withdraw
+	if action == "CAW" && IsLengthExcludeReward(records, 4) && records[0].IsDeposit() && records[1].IsDeposit() {
+		records[0].comment = "Withdraw - Yieldly - Distribution Pools"
+		records[1].staking = true
+		records[1].comment = "Claim - Yieldly - Distribution Pools"
+		return records, nil
+	}
+	
 	// Opt-out is not implemented.
 
 	return records, fmt.Errorf("invalid ApplYieldlyDistributionPools() record | onCompletion: %s | action: %s | records length: %d | txns length: %d", onCompletion, action, len(records), len(txns))
