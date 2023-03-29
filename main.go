@@ -137,8 +137,13 @@ func toExportRecords(client *indexer.Client, export exporter.Interface, account 
 				lookupASA := client.LookupAssetByID(tx.AssetTransferTransaction.AssetId)
 				_, asset, err := lookupASA.Do(context.TODO())
 				if err != nil {
-					return records, fmt.Errorf("error looking up asset id: %w", err)
+					lookupASA = client.LookupAssetByID(tx.AssetTransferTransaction.AssetId).IncludeAll(true)
+                                	_, asset, err = lookupASA.Do(context.TODO())
+					if err != nil {
+						return records, fmt.Errorf("error looking up asset id: %w", err)
+					}
 				}
+
 				fmt.Printf("    looked up | Asset ID: %d | UnitName: %s | Name: %s | Decimals: %d |\n", asset.Index, asset.Params.UnitName, asset.Params.Name, asset.Params.Decimals)
 				assetMap[tx.AssetTransferTransaction.AssetId] = asset
 			}
